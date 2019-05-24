@@ -26,6 +26,12 @@ def parseArguments():
 	else:
 		demoPath = None
 
+	if demoPath is not None:
+		if (demoPath[-1] is not '/'):
+			demoPath = demoPath + '/'
+		elif (demoPath[-1] is not '\\'):
+			demoPath = demoPath + '\\\\'
+
 	# Visibility
 	if '-v' in args:
 		nextArg = args[args.index('-v') + 1]
@@ -42,8 +48,6 @@ def parseArguments():
 		sys.exit('Not a valid visibility parameter')
 
 	return [demoPath, visibility]
-
-
 
 if __name__ == '__main__':
 	main()

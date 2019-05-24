@@ -84,8 +84,8 @@ class Uploader:
 		self.writeJSON(self.responseList)
 
 	def upload(self):
-		self.responseList['UploadParameters'] = {'Path':self.demoPath, 'Visibility':self.visibility}
-		for replay in self.pbar(self.replayList[0:3]):
+		self.responseList['UploadInformation'] = {'Path':self.demoPath, 'Visibility':self.visibility, 'ReplayCount':len(self.replayList)}
+		for replay in self.pbar(self.replayList):
 			subprocess.call(['curl', '-s', '-o', self.tempResponsePath, '-F', 'file=@' + replay[0],'-H', 'Authorization:' + self.authID, self.uploadURL], shell=False)
 			tempResponse = self.getTempResponse()
 			self.responseList[replay[0]] = tempResponse
