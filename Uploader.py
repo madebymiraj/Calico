@@ -11,10 +11,12 @@ try:
 except:
   pass
 
-class BallchasingUploader:
+class Uploader:
 
-	def __init__(self):
-		self.defaultPath = self.getUserDemoPath()
+	def __init__(self, args):
+		self.userDefinedPath = args[0]
+		self.visibility = args[1]
+		self.demoPath = self.getUserDemoPath(self.userDefinedPath)
 		self.responseList = {}
 		self.pbar = ProgressBar()
 		self.getUploadParameters()
@@ -22,7 +24,7 @@ class BallchasingUploader:
 		self.replayList = self.filterFileList(self.fileList)
 
 	def getUploadParameters(self):
-		self.uploadURL = 'https://ballchasing.com/api/v2/upload'
+		self.uploadURL = 'https://ballchasing.com/api/v2/upload?visibility=' + self.visibility
 		self.authFilepath = 'Resources/auth'
 		self.authID = self.getAuthID()
 		self.tempResponsePath = 'Resources/Logs/tempResponse'
@@ -49,12 +51,11 @@ class BallchasingUploader:
 			return dPath
 		elif platform.system() == 'Darwin':
 			dPath = '/Library/Application Support/Rocket League/TAGame/Demos/'
-			#dPath = '/Users/Joseph/Documents/GitHub/Vextra/Resources/Replays/Set of 20'
 			return dPath
 
 	def getFileList(self, demoPath=None):
 		if demoPath is None:
-			demoPath = self.defaultPath
+			demoPath = self.demoPath
 		return [(x[0], time.ctime(x[1].st_ctime), os.path.getsize(x[0])) for x in sorted([((demoPath + fn), os.stat((demoPath + fn))) for fn in os.listdir(demoPath)], key = lambda x: x[1].st_ctime)]
 
 	def filterFileList(self, fileList):
@@ -83,11 +84,9 @@ class BallchasingUploader:
 		self.writeJSON(self.responseList)
 
 	def upload(self):
+		self.responseList['UploadParameters'] = {'Path':self.demoPath, 'Visibility':self.visibility}
 		for replay in self.pbar(self.replayList):
 			subprocess.call(['curl', '-s', '-o', self.tempResponsePath, '-F', 'file=@' + replay[0],'-H', 'Authorization:' + self.authID, self.uploadURL], shell=False)
 			tempResponse = self.getTempResponse()
 			self.responseList[replay[0]] = tempResponse
 		self.logResponses()
-
-uploader = BallchasingUploader()
-uploader.upload()
