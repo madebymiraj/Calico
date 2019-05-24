@@ -67,8 +67,8 @@ class Uploader:
 
 	def getTempResponse(self):
 		if os.path.exists(self.tempResponsePath):
-			response = self.readJSON()
-		return response
+			return self.readJSON()
+		return None
 
 	def readJSON(self):
 		with open(self.tempResponsePath, 'r') as file:
@@ -85,7 +85,7 @@ class Uploader:
 
 	def upload(self):
 		self.responseList['UploadParameters'] = {'Path':self.demoPath, 'Visibility':self.visibility}
-		for replay in self.pbar(self.replayList):
+		for replay in self.pbar(self.replayList[0:3]):
 			subprocess.call(['curl', '-s', '-o', self.tempResponsePath, '-F', 'file=@' + replay[0],'-H', 'Authorization:' + self.authID, self.uploadURL], shell=False)
 			tempResponse = self.getTempResponse()
 			self.responseList[replay[0]] = tempResponse
