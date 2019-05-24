@@ -3,17 +3,16 @@ import os
 import time
 import json
 import platform
-from os import listdir
-from os.path import isfile, join
+import datetime
 from pprint import pprint
 from progressbar import ProgressBar
-from pprint import pprint
 try:
   import ctypes.wintypes
 except:
   pass
 
 class BallchasingUploader:
+
 	def __init__(self):
 		self.defaultPath = self.getUserDemoPath()
 		self.responseList = {}
@@ -49,7 +48,7 @@ class BallchasingUploader:
 			dPath = str(buf.value) + '\\My Games\\Rocket League\\TAGame\\Demos\\'
 			return dPath
 		elif platform.system() == 'Darwin':
-			dPath = '/Library/Application Support/Rocket League/TAGame/Demos'
+			dPath = '/Library/Application Support/Rocket League/TAGame/Demos/'
 			#dPath = '/Users/Joseph/Documents/GitHub/Vextra/Resources/Replays/Set of 20'
 			return dPath
 
@@ -76,7 +75,8 @@ class BallchasingUploader:
 		return response
 
 	def writeJSON(self, data):
-		with open(self.responseLogPath, 'w') as file:
+		logPath = self.responseLogPath + str(datetime.datetime.now().strftime(" %Y-%m-%d %H-%M-%S"))
+		with open(logPath, 'w') as file:
 			json.dump(data, file, indent=4)
 
 	def logResponses(self):
