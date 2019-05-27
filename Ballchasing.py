@@ -1,5 +1,7 @@
 import argparse
 import sys
+import asyncio
+import time
 from Uploader import Uploader
 from pprint import pprint
 
@@ -7,8 +9,9 @@ def main():
 
 	args = parseArguments()
 	uploader = Uploader(args)
-	uploader.upload()
-	
+	loop = asyncio.get_event_loop()
+	loop.run_until_complete(uploader.asyncUpload())
+	uploader.logResponses(uploader.asyncPayloads)	
 
 def parseArguments():
 

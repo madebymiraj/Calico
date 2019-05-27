@@ -4,8 +4,11 @@ import time
 import json
 import platform
 import datetime
+import requests
+import asyncio
+import aiohttp
 from pprint import pprint
-from progressbar import ProgressBar
+from tqdm import tqdm
 try:
   import ctypes.wintypes
 except:
@@ -17,16 +20,19 @@ class Uploader:
 		self.userDefinedPath = args[0]
 		self.visibility = args[1]
 		self.demoPath = self.getUserDemoPath(self.userDefinedPath)
-		self.responseList = {}
-		self.pbar = ProgressBar()
+		self.syncPayloads = {}
+		self.asyncPayloads = []
 		self.getUploadParameters()
 		self.fileList = self.getFileList()
 		self.replayList = self.filterFileList(self.fileList)
+		self.replayCount = len(self.replayList)
+		self.openAll()
 
 	def getUploadParameters(self):
 		self.uploadURL = 'https://ballchasing.com/api/v2/upload?visibility=' + self.visibility
 		self.authFilepath = 'Resources/auth'
 		self.authID = self.getAuthID()
+		self.authParameter = {'Authorization': self.authID}
 		self.tempResponsePath = 'Resources/Logs/tempResponse'
 		self.responseLogPath = 'Resources/Logs/Responses'
 
@@ -65,6 +71,11 @@ class Uploader:
 				filteredList.append(replay)
 		return filteredList
 
+	def openAll(self):
+		self.openedReplays = []
+		for replay in self.replayList:
+			self.openedReplays.append({'data': {'file': open(replay[0], 'rb')}, 'Name':os.path.basename(replay[0])})
+
 	def getTempResponse(self):
 		if os.path.exists(self.tempResponsePath):
 			return self.readJSON()
@@ -80,13 +91,25 @@ class Uploader:
 		with open(logPath, 'w') as file:
 			json.dump(data, file, indent=4)
 
-	def logResponses(self):
-		self.writeJSON(self.responseList)
+	def logResponses(self, data=None):
+		if data is None:
+			data = self.asyncPayloads
+		self.writeJSON(data)
 
-	def upload(self):
-		self.responseList['UploadInformation'] = {'Path':self.demoPath, 'Visibility':self.visibility, 'ReplayCount':len(self.replayList)}
-		for replay in self.pbar(self.replayList):
+	def syncUpload(self):
+		self.responseList['UploadInformation'] = {'Path':self.demoPath, 'Visibility':self.visibility, 'ReplayCount':self.replayCount}
+		for replay in tqdm(self.replayList, total=self.replayCount):
 			subprocess.call(['curl', '-s', '-o', self.tempResponsePath, '-F', 'file=@' + replay[0],'-H', 'Authorization:' + self.authID, self.uploadURL], shell=False)
 			tempResponse = self.getTempResponse()
 			self.responseList[replay[0]] = tempResponse
 		self.logResponses()
+
+	async def asyncUpload(self):
+		async with aiohttp.ClientSession() as self.session:
+			responses = [await future for future in tqdm(asyncio.as_completed(map(self.asyncPost, self.openedReplays)), total=self.replayCount)]
+
+	async def asyncPost(self, replay):
+		async with self.session.post(self.uploadURL, headers=self.authParameter, data=replay['data']) as response:
+			self.asyncPayloads.append([replay['Name'], await response.json()])
+
+	

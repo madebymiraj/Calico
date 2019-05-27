@@ -4,16 +4,24 @@ Mass replay uploader for the [Ballchasing](Ballchasing.com) replay repository
 ## Requirements
 
 - Python 3.6+
-- ProgressBar Library
+- tqdm Library
+- aiohttp Library
+- Curl executable (If uploading synchronously)
 - Windows or Mac
 
 ## Dependencies and Prerequisites
 
-Calico uses the progressbar library for python to visualize the progress of the replay uploads
+Calico uses the tqdm library for python to visualize the progress of the replay uploads
 
-To install progressbar:
+To install tqdm:
 
-    pip install progressbar
+    pip install tqdm
+
+Calico uses the aiohttp library for python to allow for asynchronous uploads which greatly decreases total upload time
+
+To install aiohttp:
+
+    pip install aiohttp
 
 An authentication key is required to upload replays to [Ballchasing](Ballchasing.com). To obtain an authentication key, visit ballchasing.com/upload while signed in via steam. Once you have an authentication key, create a file (no extension) named auth in the Resources folder and paste the key inside of it.
 
