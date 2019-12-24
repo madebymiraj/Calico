@@ -16,10 +16,9 @@ except:
 
 class Uploader:
 
-    def __init__(self, args):
-        self.userDefinedPath = args[0]
-        self.visibility = args[1]
-        self.demoPath = self.getUserDemoPath(self.userDefinedPath)
+    def __init__(self, demoPath, visibility):
+        self.demoPath = demoPath
+        self.visibility = visibility
         self.syncPayloads = {}
         self.asyncPayloads = []
         self.getUploadParameters()
@@ -40,24 +39,6 @@ class Uploader:
         with open(self.authFilepath, 'r') as file:
             authID = file.read()
         return authID
-
-    # Finds the path Rocket League uses to store the replay files on the system
-    # Default windows path: C:/Users/%USERNAME%/Documents/My Games/Rocket League/TAGame/Demos/
-    # Default macos path: '~/Library/Application Support/Rocket League/TAGame/Demos'
-    def getUserDemoPath(self, userDefinedPath=None):
-        if userDefinedPath is not None:
-            return userDefinedPath
-
-        if platform.system() == 'Windows':
-            CSIDL_PERSONAL= 5
-            SHGFP_TYPE_CURRENT= 0
-            buf= ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-            ctypes.windll.shell32.SHGetFolderPathW(0, CSIDL_PERSONAL, 0, SHGFP_TYPE_CURRENT, buf)
-            dPath = str(buf.value) + '\\My Games\\Rocket League\\TAGame\\Demos\\'
-            return dPath
-        elif platform.system() == 'Darwin':
-            dPath = '/Library/Application Support/Rocket League/TAGame/Demos/'
-            return dPath
 
     def getFileList(self, demoPath=None):
         if demoPath is None:
