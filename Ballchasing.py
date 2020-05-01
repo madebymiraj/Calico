@@ -16,7 +16,7 @@ def main():
     uploader = Uploader(args.folderpath, args.visibility)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(uploader.upload_async())
-    uploader.log_responses(uploader.asyncPayloads)  
+    uploader.log_responses(uploader.async_payloads)  
 
 
 def parse_args():
