@@ -1,13 +1,14 @@
-import subprocess
 import os
 import time
 import json
-import platform
-import datetime
+import hashlib
 import asyncio
 import aiohttp
-from pprint import pprint
+import platform
+import datetime
+import subprocess
 from tqdm import tqdm
+from pprint import pprint
 try:
     import ctypes.wintypes
 except:
@@ -24,8 +25,10 @@ class Uploader:
         self.get_upload_parameters()
         self.file_list = self.get_file_list()
         self.replay_list = self.filter_file_list(self.file_list)
-        self.replay_count = len(self.replay_list)
+        self.hashes_list = self.get_used_hashes()
+        self.replay_hashes = {}
         self.open_all()
+        self.replay_count = len(self.opened_replays)
 
     def get_upload_parameters(self):
         cwd = os.path.dirname(__file__)
@@ -35,6 +38,7 @@ class Uploader:
         self.auth_parameter = {'Authorization': self.auth_id}
         self.temp_response_path = cwd + '/Resources/Logs/tempResponse'
         self.response_log_path = cwd + '/Resources/Logs/Responses'
+        self.hashes_log_path = cwd + '/Resources/Logs/hashes.txt'
 
     def get_auth_id(self):
         with open(self.auth_file_path, 'r') as file:
@@ -53,10 +57,18 @@ class Uploader:
                 filtered_list.append(replay)
         return filtered_list
 
+    def get_used_hashes(self):
+        with open(self.hashes_log_path, 'r') as file:
+            data = file.readlines()
+        return [line.strip() for line in data]
+
     def open_all(self):
         self.opened_replays = []
         for replay in self.replay_list:
-            self.opened_replays.append({'data': {'file': open(replay[0], 'rb')}, 'Name':os.path.basename(replay[0])})
+            replay_hash = self.get_hash(replay[0])
+            if replay_hash not in self.hashes_list:
+                self.opened_replays.append({'data': {'file': open(replay[0], 'rb')}, 'Name':os.path.basename(replay[0]), 'Hash': replay_hash})
+                self.replay_hashes[os.path.basename(replay[0])] = replay_hash
 
     def get_temp_response(self):
         if os.path.exists(self.temp_response_path):
@@ -73,10 +85,20 @@ class Uploader:
         with open(logPath, 'w') as file:
             json.dump(data, file, indent=4)
 
+    def update_hashes(self, hashes):
+        with open(self.hashes_log_path, 'a') as file:
+            for replay_hash in hashes:
+                file.write('\n' + replay_hash)
+
+    def write_hash(self, replay_hash):
+        with open(self.hashes_log_path, 'a') as file:
+            file.write('\n' + replay_hash)                        
+
     def log_responses(self, data=None):
         if data is None:
             data = self.async_payloads
         self.write_json(data)
+        self.update_hashes(list(self.replay_hashes.values()))
 
     def upload_sync(self):
         self.response_list['UploadInformation'] = {'Path':self.demo_path, 'Visibility':self.visibility, 'ReplayCount':self.replay_count}
@@ -86,6 +108,13 @@ class Uploader:
             self.response_list[replay[0]] = temp_response
         self.log_responses()
 
+    def get_hash(self, file_name):
+        hasher = hashlib.md5()
+        with open(file_name, 'rb') as file:
+            buf = file.read()
+            hasher.update(buf)
+        return hasher.hexdigest()
+
     async def upload_async(self):
         async with aiohttp.ClientSession() as self.session:
             responses = [await future for future in tqdm(asyncio.as_completed(map(self.post_async, self.opened_replays)), total=self.replay_count)]
@@ -93,5 +122,6 @@ class Uploader:
     async def post_async(self, replay):
         async with self.session.post(self.upload_url, headers=self.auth_parameter, data=replay['data']) as response:
             self.async_payloads.append([replay['Name'], await response.json()])
+            self.write_hash(replay['Hash'])
 
 
